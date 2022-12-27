@@ -260,7 +260,6 @@ public class CodeWriter {
             }
 
         }
-        System.out.println("B4 push");
         writeAndCount("@SP");
         writeAndCount("A=M");
         writeAndCount("M=D");

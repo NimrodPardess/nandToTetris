@@ -9,6 +9,7 @@ public class Parser {
     private final BufferedReader reader;
     private String currentLine;
     private String nextLine;
+    public String instruct;
 
     // create enum for handling constants
 //    public enum CommandType {
@@ -48,16 +49,17 @@ public class Parser {
     // keep reading until there are good line, ignore white spaces and comments
     public void advance() throws IOException {
         // keep reading until there are good line
-        while (hasMoreLines()) {
+        if (hasMoreLines()) {
             this.currentLine = this.nextLine;
             this.nextLine = this.reader.readLine();
 
             // remove white spaces
-            currentLine = this.currentLine.trim();
+            currentLine = currentLine.split("//")[0].trim();
             // checks if there is a comment
-            if (this.currentLine.contains("//")) {
-                int pos = this.currentLine.indexOf("/");
-                this.currentLine = this.currentLine.substring(0, pos);
+            if (!currentLine.startsWith("//") && !currentLine.isEmpty()) {
+
+                instruct = currentLine.split(" ")[0].trim();
+
             } else {
                 advance();
             }
@@ -83,6 +85,8 @@ public class Parser {
         arithmetics.add("not");
 
         String command = this.currentLine.split(" ")[0].trim();
+        //System.out.println(command);
+
         // checks C_ARITHMETIC command
         if (arithmetics.contains(command)) {
             return C_ARITHMETIC;

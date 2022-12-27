@@ -24,7 +24,7 @@ public class VMTranslator {
         while (p.hasMoreLines()) {
             p.advance();
 
-            System.out.println(p.commandType());
+            System.out.println(p.instruct);
             //System.out.println(Parser.CommandType.C_PUSH);
             //System.out.println(p.commandType() == Parser.C_PUSH);
             if((p.commandType() == Parser.C_PUSH) || (p.commandType() == Parser.C_POP)) {
