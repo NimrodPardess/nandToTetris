@@ -7,11 +7,12 @@ public class CodeWriter {
     private int currentLine;
     private int labelCount;
     private String fileName;
+    private static int countPos;
 
     public CodeWriter(File output) throws IOException {
-        this.fileName = output.getName();
+        this.fileName = output.getName(); // the name of .asm
         this.writer = new FileWriter(output);
-        setFileName(output.getName());
+        //setFileName(output.getName());
         this.currentLine = 0;
         this.labelCount = 0;
     }
@@ -26,8 +27,9 @@ public class CodeWriter {
         writeAndCount("D=A");
         writeAndCount("@SP");
         writeAndCount("M=D");
-        
+
         writeCall("Sys.init", 0);
+        writeAndCount("0;JMP");
     }
 
     public void writeAndCount(String command) throws IOException{
@@ -71,53 +73,64 @@ public class CodeWriter {
             writeAndCount("@SP");
             writeAndCount("AM=M-1");
             writeAndCount("D=M");
-            //writeAndCount("@SP"); //MABYE BUG
             writeAndCount("A=A-1");
             writeAndCount("D=M-D");
-            writeAndCount("@" + (this.currentLine + 4)); // label True
+            writeAndCount("@eq.true." + countPos);
             writeAndCount("D;JEQ");
-            writeAndCount("D=0"); // False
-            writeAndCount("@" + (this.currentLine + 3)); // label False
+            writeAndCount("@SP"); // False
+            writeAndCount("A=M-1"); // False
+            writeAndCount("M=0"); // False
+            writeAndCount("@eq.after." + countPos);
             writeAndCount("0;JMP");
-            writeAndCount("D=-1");// True
+            writeAndCount("(eq.true." + countPos + ")");
             writeAndCount("@SP");
             writeAndCount("A=M-1");
-            writeAndCount("M=D");
+            writeAndCount("M=-1");
+            writeAndCount("(eq.after." + countPos + ")");
 
+            countPos++;
         }
         if (Objects.equals(command, "gt")) {
             writeAndCount("@SP");
             writeAndCount("AM=M-1");
             writeAndCount("D=M");
-            writeAndCount("@SP"); //MABYE BUG
             writeAndCount("A=A-1");
             writeAndCount("D=M-D");
-            writeAndCount("@" + (this.currentLine + 4)); // label True
-            writeAndCount("D;JLT");
-            writeAndCount("D=0"); // False
-            writeAndCount("@" + (this.currentLine + 3)); // label False
+            writeAndCount("@gt.true." + countPos);
+            writeAndCount("\nD;JGT");
+            writeAndCount("@SP"); // False
+            writeAndCount("A=M-1"); // False
+            writeAndCount("M=0"); // False
+            writeAndCount("@gt.after." + countPos);
             writeAndCount("0;JMP");
-            writeAndCount("D=-1");// True
+            writeAndCount("(gt.true." + countPos + ")");
             writeAndCount("@SP");
             writeAndCount("A=M-1");
-            writeAndCount("M=D");
+            writeAndCount("M=-1");
+            writeAndCount("(gt.after." + countPos + ")");
+
+            countPos++;
         }
         if (Objects.equals(command, "lt")) {
             writeAndCount("@SP");
             writeAndCount("AM=M-1");
             writeAndCount("D=M");
-            writeAndCount("@SP"); //MABYE BUG
             writeAndCount("A=A-1");
             writeAndCount("D=M-D");
-            writeAndCount("@" + (this.currentLine + 4)); // label True
-            writeAndCount("D;JGT");
-            writeAndCount("D=0"); // False
-            writeAndCount("@" + (this.currentLine + 3)); // label False
+            writeAndCount("@lt.true." + countPos);
+            writeAndCount("D;JLT");
+            writeAndCount("@SP");
+            writeAndCount("A=M-1"); // False
+            writeAndCount("M=0"); // False
+            writeAndCount("@lt.after." + countPos);
             writeAndCount("0;JMP");
-            writeAndCount("D=-1");// True
+            writeAndCount("(lt.true." + countPos + ")");
             writeAndCount("@SP");
             writeAndCount("A=M-1");
-            writeAndCount("M=D");
+            writeAndCount("M=-1");
+            writeAndCount("(lt.after." + countPos + ")");
+
+            countPos++;
         }
         if (Objects.equals(command, "neg")) {
             writeAndCount("@SP"); 
@@ -130,7 +143,7 @@ public class CodeWriter {
             writeAndCount("M=!M");
         }
     }
-
+    // PAY ATTENTION TO CHANGE STATIC TO FILE NAME
     private void parsePop(String segment, int index) throws IOException {
         switch (segment) {
             case "local": {
@@ -173,7 +186,7 @@ public class CodeWriter {
                 }
             }
             case "static": {
-                writeAndCount("@" + fileName + "." + index); //Maybe bug
+                writeAndCount("@" + getFileName() + "." + index); // change name to the file name.vm
                 writeAndCount("D=A");
                 break;
             }
@@ -194,7 +207,7 @@ public class CodeWriter {
         writeAndCount("A=M");
         writeAndCount("M=D");
     }
-
+    // PAY ATTENTION TO CHANGE STATIC TO FILE NAME
     public void parsePush(String segment, int index) throws IOException {
         switch (segment) {
             case "local": {
@@ -246,7 +259,7 @@ public class CodeWriter {
                 break;
             }
             case "static": {
-                writeAndCount("@" + fileName + "." + index);
+                writeAndCount("@" + getFileName() + "." + index);
                 writeAndCount("D=M");
                 break;
             }
@@ -275,32 +288,38 @@ public class CodeWriter {
         }
     }
 
-    public void writeLabel(String label) throws IOException{
-        writeAndCount("("+ label +")");
+    public void writeLabel(String label, String functionName) throws IOException{
+        writeAndCount("(" + functionName + "$" + label + ")");
     }
     
-    public void writeGoto(String label) throws IOException{
-        writeAndCount("@" + label);
+    public void writeGoto(String label, String functionName) throws IOException{
+        writeAndCount("@" + functionName +"$" + label);
         writeAndCount("0;JMP");
     }
 
-    public void writeIf(String label) throws IOException{
+    public void writeIf(String label, String functionName) throws IOException{
         writeAndCount("// if goto call " + label);
         writeAndCount("@SP");
         writeAndCount("AM=M-1");
         writeAndCount("D=M");
-        writeAndCount("@" + label);
+        writeAndCount("@" + functionName + "$" + label);
         writeAndCount("D;JNE");
     }
 
     public void writeFunction(String functionName, int nVars) throws IOException{
         // we declare the function
-        writeLabel(functionName);
-
+        //writeLabel(functionName);
+        writeAndCount("(" + functionName + ")");
+        writeAndCount("@SP");
+        writeAndCount("A=M");
         // set all vars to zero
         for(int i = 0 ; i < nVars ; i++){
-            writePushPop(Parser.C_PUSH, "constant", 0);
+            writeAndCount("M=0");
+            writeAndCount("A=A+1");
         }
+        writeAndCount("D=A");
+        writeAndCount("@SP");
+        writeAndCount("M=D");
     }
 
     public void writeCall(String functionName, int nArgs) throws IOException{
@@ -313,11 +332,12 @@ public class CodeWriter {
 //        writeAndCount("D=A");
         String c = Integer.toString(currentLine);
         // building the close push commands 
+
         writeAndCount("@SP");
         writeAndCount("D=M");
         writeAndCount("@R13");
         writeAndCount("M=D");
-        writeAndCount("@RET." + c);
+        writeAndCount("@RET." + countPos);
         writeAndCount("D=A");
         writeAndCount("@SP");
         writeAndCount("A=M");
@@ -364,7 +384,9 @@ public class CodeWriter {
         writeAndCount("M=D");
         writeAndCount("@" + functionName);
         writeAndCount("0;JMP");
-        writeAndCount("(RET." + c + ")");
+        writeAndCount("(RET." + countPos + ")");
+
+        countPos++;
     }
 
     public void writeReturn() throws IOException{
@@ -427,6 +449,10 @@ public class CodeWriter {
         writeAndCount("(END)");
         writeAndCount("@END");
         writeAndCount("0;JMP");
+    }
+
+    public String getFileName() {
+        return fileName;
     }
 
     // Close the input file

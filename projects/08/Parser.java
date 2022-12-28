@@ -3,13 +3,15 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Scanner;
 
 public class Parser {
 
-    private final BufferedReader reader;
+    private final Scanner scanner;
     private String currentLine;
     private String nextLine;
     public String instruct;
+    private String functionName;
 
     // create enum for handling constants
 //    public enum CommandType {
@@ -35,38 +37,33 @@ public class Parser {
 
     // Implement constructor
     public Parser(File file) throws IOException {
-
-        this.reader = new BufferedReader(new FileReader(file));
-        this.currentLine = null;
-        this.nextLine = this.reader.readLine();
+        System.out.println("trying to create new file = " + file.getName());
+        this.scanner = new Scanner(file);
+        this.currentLine = "";
+        this.functionName = "";
     }
 
     // checks if there are more line in the file
     public boolean hasMoreLines() {
-        return (this.nextLine != null);
+        System.out.println("yes00");
+        return (this.scanner.hasNextLine());
     }
 
     // keep reading until there are good line, ignore white spaces and comments
     public void advance() throws IOException {
         // keep reading until there are good line
+        System.out.println("yes0");
         if (hasMoreLines()) {
-            this.currentLine = this.nextLine;
-            this.nextLine = this.reader.readLine();
-
-            // remove white spaces
-            currentLine = currentLine.split("//")[0].trim();
+            String line = scanner.nextLine();
+            System.out.println("yes1");
             // checks if there is a comment
-            if (!currentLine.startsWith("//") && !currentLine.isEmpty()) {
-
-                instruct = currentLine.split(" ")[0].trim();
-
+            if (!line.startsWith("//") && !line.isEmpty()) {
+                System.out.println("yes2");
+                this.currentLine = line.split("//")[0].trim();
             } else {
+                System.out.println("yes3");
                 advance();
             }
-
-            // checks if the line is empty
-//            if (!this.currentLine.isEmpty()) return;
-            //      }
         }
     }
 
@@ -74,7 +71,7 @@ public class Parser {
     public int commandType() {
 
         ArrayList<String> arithmetics = new ArrayList<>();
-        arithmetics.add("add");
+        arithmetics.add("add"); 
         arithmetics.add("sub");
         arithmetics.add("neg");
         arithmetics.add("eq");
@@ -113,6 +110,7 @@ public class Parser {
         }
         // checks C_FUNCTION command
         if (command.equals("function")) {
+            this.functionName = this.currentLine.split(" ")[1];
             return C_FUNCTION;
         }
         // checks C_RETURN command
@@ -142,6 +140,22 @@ public class Parser {
         } catch (NumberFormatException nte) {
         }
         return 0;
+    }
+
+    public String getFunctionName() {
+        return functionName;
+    }
+
+    public void setFunctionName(String functionName) {
+        this.functionName = functionName;
+    }
+
+    public String getCurrentLine() {
+        return currentLine;
+    }
+
+    public void setCurrentLine(String currentLine) {
+        this.currentLine = currentLine;
     }
 }
 
